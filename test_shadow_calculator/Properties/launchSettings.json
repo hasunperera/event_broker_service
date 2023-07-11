@@ -1,0 +1,11 @@
+﻿{
+  "profiles": {
+    "test_shadow_calculator": {
+      "commandName": "Project",
+      "dotnetRunMessages": "true",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
