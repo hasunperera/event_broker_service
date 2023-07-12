@@ -1,38 +1,39 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Hosting;
-using MassTransit;
-using test_shadow_calculator.Consumers;
+using System.Text;
+using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
 
 namespace test_shadow_calculator
 {
     public class Program
     {
-        public static async Task Main(string[] args)
+        public static void Main(string[] args)
         {
-            await CreateHostBuilder(args).Build().RunAsync();
+            var factory = new ConnectionFactory { HostName = "localhost" };
+            using var connection = factory.CreateConnection();
+            using var channel = connection.CreateModel();
+
+            channel.QueueDeclare(queue: "event_queue",
+                durable: false,
+                exclusive: false,
+                autoDelete: false,
+                arguments: null);
+
+            Console.WriteLine(" [*] Waiting for messages.");
+
+            var consumer = new EventingBasicConsumer(channel);
+            consumer.Received += (model, ea) =>
+            {
+                var body = ea.Body.ToArray();
+                var message = Encoding.UTF8.GetString(body);
+                Console.WriteLine($" [x] Received {message}");
+            };
+            channel.BasicConsume(queue: "event_queue",
+                autoAck: true,
+                consumer: consumer);
+
+            Console.WriteLine(" Press [enter] to exit.");
+            Console.ReadLine();
         }
-
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args)
-                .ConfigureServices((hostContext, services) =>
-                {
-                    services.AddMassTransit(x =>
-                    {
-                        x.AddConsumer<TestShadowCalculatorConsumer>();
-                        x.UsingRabbitMq((context,cfg) =>
-                        {
-                            cfg.Host("localhost", "/", h => {
-                                h.Username("guest");
-                                h.Password("guest");
-                            });
-
-                            cfg.ConfigureEndpoints(context);
-                        });
-                    });
-                });
     }
 }

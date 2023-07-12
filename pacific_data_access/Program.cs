@@ -1,41 +1,38 @@
+
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Hosting;
-using MassTransit;
-using Microsoft.Extensions.DependencyInjection;
+using System.Text;
+using Contracts;
+using RabbitMQ.Client;
 
 namespace pacific_data_access
 {
     public class Program
     {
-        public static async Task Main(string[] args)
+        public static void Main(string[] args)
         {
-            await CreateHostBuilder(args).Build().RunAsync();
+            var factory = new ConnectionFactory { HostName = "localhost" };
+            using var connection = factory.CreateConnection();
+            using var channel = connection.CreateModel();
+
+            channel.QueueDeclare(queue: "event_queue",
+                durable: false,
+                exclusive: false,
+                autoDelete: false,
+                arguments: null);
+
+            // const string message = "Hello World!";
+            PayRunClosedEvent_v1 message = new PayRunClosedEvent_v1{PayRunId = 1};
+            string jsonMessage = Newtonsoft.Json.JsonConvert.SerializeObject(message);
+            var body = Encoding.UTF8.GetBytes(jsonMessage);
+
+            channel.BasicPublish(exchange: string.Empty,
+                routingKey: "hello",
+                basicProperties: null,
+                body: body);
+            Console.WriteLine($" [x] Sent {message}");
+
+            Console.WriteLine(" Press [enter] to exit.");
+            Console.ReadLine();
         }
-
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args)
-                .ConfigureServices((hostContext, services) =>
-                {
-                    services.AddMassTransit(x =>
-                    {
-                        x.UsingRabbitMq((context,cfg) =>
-                        {
-                            cfg.Host("localhost", "/", h => {
-                                h.Username("guest");
-                                h.Password("guest");
-                            });
-
-                            cfg.ConfigureEndpoints(context);
-                        });
-                    });
-
-                    services.AddHostedService<Publisher>();
-                });
-        
-            
     }
 }
