@@ -9,15 +9,15 @@ namespace test_shadow_calculator
     {
         public static void Main(string[] args)
         {
-            var factory = new ConnectionFactory { HostName = "localhost" };
+            var factory = new ConnectionFactory { HostName = "", UserName = "", Password = "", VirtualHost = ""};
             using var connection = factory.CreateConnection();
             using var channel = connection.CreateModel();
 
-            channel.QueueDeclare(queue: "event_queue",
-                durable: false,
-                exclusive: false,
-                autoDelete: false,
-                arguments: null);
+            // channel.QueueDeclare(queue: "ogjzpuum",
+            //     durable: false,
+            //     exclusive: false,
+            //     autoDelete: false,
+            //     arguments: null);
 
             Console.WriteLine(" [*] Waiting for messages.");
 
@@ -28,7 +28,7 @@ namespace test_shadow_calculator
                 var message = Encoding.UTF8.GetString(body);
                 Console.WriteLine($" [x] Received {message}");
             };
-            channel.BasicConsume(queue: "event_queue",
+            channel.BasicConsume(queue: "PayPacketClosedEventV1Handler",
                 autoAck: true,
                 consumer: consumer);
 
